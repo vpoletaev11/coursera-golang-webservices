@@ -35,7 +35,7 @@ func dirTree(out io.Writer, path string, printFiles bool) error {
 	if err != nil {
 		return err
 	}
-	err, pathDir := FIToDir(pathFI, true, 0)
+	pathDir, err := FIToDir(pathFI, true, 0)
 	if err != nil {
 		return err
 	}
@@ -44,23 +44,27 @@ func dirTree(out io.Writer, path string, printFiles bool) error {
 }
 
 //return massive with collection of dirs
-func dirContent(path dir, tabs int) (error, []dir) {
-	files, err := ioutil.ReadDir(path.Name)
+func dirContent(path dir, tabs int) ([]dir, error) {
+	files, err := ioutil.ReadDir(path.Name) // warning !!!
 	if err != nil {
-		return fmt.Errorf("path not founded: %v", path), nil
+		return nil, fmt.Errorf("path not founded: %v", path)
 	}
-	dirs := make([]dir, 0)
-	var a dir
+	var dirs []dir
 	for i, file := range files {
 		var isLast bool
 		if i == len(files)-1 {
 			isLast = true
 		}
-		a.IsDir, a.Name, a.Size = file.IsDir(), file.Name(), file.Size()
-		a.Tabs, a.IsLast = tabs, isLast
+		a := dir{
+			IsDir:  file.IsDir(),
+			Name:   path.Name + "/" + file.Name(),
+			Size:   file.Size(),
+			Tabs:   tabs,
+			IsLast: isLast,
+		}
 		dirs = append(dirs, a)
 	}
-	return nil, dirs
+	return dirs, nil
 }
 
 //output formated string of dir in output
@@ -79,22 +83,23 @@ func dirPrinter(out io.Writer, Dir dir) {
 }
 
 //return in output formated tree
-func dirRecursiveFinder(out io.Writer, Dir dir) error {
-	err, dirs := dirContent(Dir, 0) //change!!
+func dirRecursiveFinder(out io.Writer, current dir) error {
+	out.Write([]byte(current.Name + "\n"))
+	dirs, err := dirContent(current, 0) //change!!
 	if err != nil {
 		return err
 	}
-	for _, dir := range dirs {
-		dirPrinter(out, dir)
-		dirRecursiveFinder(out, dir)
+	for _, subDir := range dirs {
+		dirPrinter(out, subDir)
+		dirRecursiveFinder(out, subDir)
 	}
 	return nil
 }
 
 //input FileInfo output dir
-func FIToDir(file os.FileInfo, isLast bool, tabs int) (error, dir) {
+func FIToDir(file os.FileInfo, isLast bool, tabs int) (dir, error) {
 	var a dir
 	a.IsDir, a.Name, a.Size = file.IsDir(), file.Name(), file.Size()
 	a.Tabs, a.IsLast = tabs, isLast
-	return nil, a
+	return a, nil
 }
