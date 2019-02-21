@@ -9,6 +9,7 @@ import (
 
 type dir struct {
 	Name   string
+	Path   string
 	IsDir  bool
 	Tabs   int
 	Size   int64
@@ -45,9 +46,9 @@ func dirTree(out io.Writer, path string, printFiles bool) error {
 
 //return massive with collection of dirs
 func dirContent(path dir, tabs int) ([]dir, error) {
-	files, err := ioutil.ReadDir(path.Name) // warning !!!
+	files, err := ioutil.ReadDir(path.Path) // warning !!!
 	if err != nil {
-		return nil, fmt.Errorf("path not founded: %v", path)
+		return nil, err
 	}
 	var dirs []dir
 	for i, file := range files {
@@ -57,7 +58,8 @@ func dirContent(path dir, tabs int) ([]dir, error) {
 		}
 		a := dir{
 			IsDir:  file.IsDir(),
-			Name:   path.Name + "/" + file.Name(),
+			Name:   file.Name(),
+			Path:   path.Name + "/" + file.Name(),
 			Size:   file.Size(),
 			Tabs:   tabs,
 			IsLast: isLast,
@@ -84,7 +86,6 @@ func dirPrinter(out io.Writer, Dir dir) {
 
 //return in output formated tree
 func dirRecursiveFinder(out io.Writer, current dir) error {
-	out.Write([]byte(current.Name + "\n"))
 	dirs, err := dirContent(current, 0) //change!!
 	if err != nil {
 		return err
@@ -100,6 +101,7 @@ func dirRecursiveFinder(out io.Writer, current dir) error {
 func FIToDir(file os.FileInfo, isLast bool, tabs int) (dir, error) {
 	var a dir
 	a.IsDir, a.Name, a.Size = file.IsDir(), file.Name(), file.Size()
+	a.Path = file.Name()
 	a.Tabs, a.IsLast = tabs, isLast
 	return a, nil
 }
