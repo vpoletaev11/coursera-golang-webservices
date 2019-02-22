@@ -52,16 +52,13 @@ func dirContent(path dir, tabs int) ([]dir, error) {
 	}
 	var dirs []dir
 	for i, file := range files {
-		var isLast bool
-		if i == len(files)-1 {
-			isLast = true
-		}
+		isLast := i == len(files)-1
 		a := dir{
 			IsDir:  file.IsDir(),
 			Name:   file.Name(),
-			Path:   path.Name + "/" + file.Name(),
+			Path:   path.Path + "/" + file.Name(),
 			Size:   file.Size(),
-			Tabs:   tabs,
+			Tabs:   path.Tabs + 1,
 			IsLast: isLast,
 		}
 		dirs = append(dirs, a)
@@ -70,16 +67,12 @@ func dirContent(path dir, tabs int) ([]dir, error) {
 }
 
 //output formated string of dir in output
-func dirPrinter(out io.Writer, Dir dir) {
-	if Dir.IsDir == true {
-		fmt.Fprintln(out, Dir.Name)
-	} else {
-		if Dir.Size == 0 {
-			str := fmt.Sprintf("%v (empty)", Dir.Name)
-			fmt.Fprintln(out, str)
-		} else {
-			str := fmt.Sprintf("%v (%vb)", Dir.Name, Dir.Size)
-			fmt.Fprintln(out, str)
+func dirPrinter(out io.Writer, path dir) {
+	if path.IsDir == true {
+		if path.Tabs == 0 {
+			fmt.Fprintf(out, "├───%v\n", path.Name)
+		} else if path.Tabs == 1 {
+			fmt.Fprintf(out, "│⎸  ├───%v\n", path.Name)
 		}
 	}
 }
@@ -99,9 +92,13 @@ func dirRecursiveFinder(out io.Writer, current dir) error {
 
 //input FileInfo output dir
 func FIToDir(file os.FileInfo, isLast bool, tabs int) (dir, error) {
-	var a dir
-	a.IsDir, a.Name, a.Size = file.IsDir(), file.Name(), file.Size()
-	a.Path = file.Name()
-	a.Tabs, a.IsLast = tabs, isLast
+	a := dir{
+		IsDir:  file.IsDir(),
+		Name:   file.Name(),
+		Size:   file.Size(),
+		Path:   file.Name(),
+		Tabs:   -1,
+		IsLast: isLast,
+	}
 	return a, nil
 }
