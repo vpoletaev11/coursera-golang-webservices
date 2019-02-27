@@ -4,10 +4,9 @@ https://www.coursera.org/learn/golang-webservices-1/
 
 ## Prerequisites
 
-GO v1.11+
+* GO v1.11+
+* [go get -u github.com/golang/dep/cmd/dep](https://github.com/golang/dep)
 
 ## How to run tests
 
     $go test ./... -v
-
-    
