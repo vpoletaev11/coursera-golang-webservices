@@ -118,21 +118,24 @@ func subPrinter(out io.Writer, tabs string, path dir) {
 
 func tabGen(file dir) string {
 	prevDirs := append(file.PrevDirsLast[1:], file.IsLast)
-	pipeAndTab := "│⎸  "
+	fmt.Println(prevDirs)
+	pipeAndTab := "│\t"
 	tabs := ""
 	for i, currentDirLast := range prevDirs {
 		// create last symbol
 		if i == len(prevDirs)-1 {
 			if currentDirLast == false {
-				tabs = "├───" + tabs
+				tabs += "├───"
 			} else {
 				tabs += "└───"
 			}
-			// creating tabs
-		} else if currentDirLast == false {
+			continue
+		}
+		// creating tabs
+		if currentDirLast == false {
 			tabs += pipeAndTab
 		} else {
-			tabs += "⎸  "
+			tabs += "⎸\t"
 		}
 	}
 	return tabs
