@@ -8,12 +8,13 @@ import (
 )
 
 type dir struct {
-	Name   string
-	Path   string
-	IsDir  bool
-	Tabs   int
-	Size   int64
-	IsLast bool
+	Name         string
+	Path         string
+	IsDir        bool
+	Tabs         int
+	Size         int64
+	IsLast       bool
+	PrevDirsLast []bool // map of IsLast for dirs from path struct dir
 }
 
 func main() {
@@ -31,21 +32,19 @@ func main() {
 
 //combainer
 func dirTree(out io.Writer, path string, printFiles bool) error {
-	// if printfiles true
-	pathFI, err := os.Stat(path)
+	pathDir, err := strToDir(path)
 	if err != nil {
 		return err
 	}
-	pathDir, err := FIToDir(pathFI, true, 0)
-	if err != nil {
-		return err
+	//logic for -f
+	if printFiles == true {
+		dirRecursiveFinder(out, pathDir)
 	}
-	dirRecursiveFinder(out, pathDir)
 	return nil
 }
 
 //return massive with collection of dirs
-func dirContent(path dir, tabs int) ([]dir, error) {
+func dirContent(path dir) ([]dir, error) {
 	files, err := ioutil.ReadDir(path.Path) // warning !!!
 	if err != nil {
 		return nil, err
@@ -61,7 +60,9 @@ func dirContent(path dir, tabs int) ([]dir, error) {
 			Tabs:   path.Tabs + 1,
 			IsLast: isLast,
 		}
+		a.PrevDirsLast = append(path.PrevDirsLast, path.IsLast)
 		dirs = append(dirs, a)
+		//prevDirIsLast for dir
 	}
 	return dirs, nil
 }
@@ -70,20 +71,23 @@ func dirContent(path dir, tabs int) ([]dir, error) {
 func dirPrinter(out io.Writer, path dir) {
 	if path.IsDir == true {
 		if path.Tabs == 0 {
-			fmt.Fprintf(out, "├───%v\n", path.Name)
+			subPrinter(out, "", path)
 		} else if path.Tabs == 1 {
-			fmt.Fprintf(out, "│⎸  ├───%v\n", path.Name)
+			subPrinter(out, "│⎸  ", path)
+		} else if path.Tabs == 2 {
+			subPrinter(out, "│⎸  │⎸  ", path)
 		}
 	}
 }
 
 //return in output formated tree
 func dirRecursiveFinder(out io.Writer, current dir) error {
-	dirs, err := dirContent(current, 0) //change!!
+	dirs, err := dirContent(current)
 	if err != nil {
 		return err
 	}
 	for _, subDir := range dirs {
+		// fmt.Fprintf(out, "%v | %v\n", subDir.Name, subDir.PrevDirsLast)
 		dirPrinter(out, subDir)
 		dirRecursiveFinder(out, subDir)
 	}
@@ -91,14 +95,45 @@ func dirRecursiveFinder(out io.Writer, current dir) error {
 }
 
 //input FileInfo output dir
-func FIToDir(file os.FileInfo, isLast bool, tabs int) (dir, error) {
+func strToDir(path string) (dir, error) {
+	pathFI, err := os.Stat(path)
+	var emptyDir dir
+	if err != nil {
+		return emptyDir, err
+	}
 	a := dir{
-		IsDir:  file.IsDir(),
-		Name:   file.Name(),
-		Size:   file.Size(),
-		Path:   file.Name(),
+		IsDir:  pathFI.IsDir(),
+		Name:   pathFI.Name(),
+		Size:   pathFI.Size(),
+		Path:   pathFI.Name(),
 		Tabs:   -1,
-		IsLast: isLast,
+		IsLast: true,
 	}
 	return a, nil
+}
+
+func subPrinter(out io.Writer, tabs string, path dir) {
+	fmt.Fprintf(out, "%v%v\n", tabGen(path), path.Name)
+}
+
+func tabGen(file dir) string {
+	prevDirs := append(file.PrevDirsLast[1:], file.IsLast)
+	pipeAndTab := "│⎸  "
+	tabs := ""
+	for i, currentDirLast := range prevDirs {
+		// create last symbol
+		if i == len(prevDirs)-1 {
+			if currentDirLast == false {
+				tabs = "├───" + tabs
+			} else {
+				tabs += "└───"
+			}
+			// creating tabs
+		} else if currentDirLast == false {
+			tabs += pipeAndTab
+		} else {
+			tabs += "	"
+		}
+	}
+	return tabs
 }
