@@ -132,7 +132,7 @@ func tabGen(file dir) string {
 		} else if currentDirLast == false {
 			tabs += pipeAndTab
 		} else {
-			tabs += "	"
+			tabs += "⎸  "
 		}
 	}
 	return tabs
