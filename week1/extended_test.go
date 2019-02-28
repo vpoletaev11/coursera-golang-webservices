@@ -67,3 +67,17 @@ func TestTabGen05(t *testing.T) {
 	//assert
 	assert.Equal(t, "│\t│\t\t└───", actual)
 }
+
+// \t\t└───ipsum
+func TestTabGen06(t *testing.T) {
+	//arrange
+	input := dir{
+		IsLast:       true,
+		PrevDirsLast: []bool{false, true, true},
+	}
+	//act
+	actual := tabGen(input)
+
+	//assert
+	assert.Equal(t, "\t\t└───", actual)
+}

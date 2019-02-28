@@ -62,22 +62,8 @@ func dirContent(path dir) ([]dir, error) {
 		}
 		a.PrevDirsLast = append(path.PrevDirsLast, path.IsLast)
 		dirs = append(dirs, a)
-		//prevDirIsLast for dir
 	}
 	return dirs, nil
-}
-
-//output formated string of dir in output
-func dirPrinter(out io.Writer, path dir) {
-	if path.IsDir == true {
-		if path.Tabs == 0 {
-			subPrinter(out, "", path)
-		} else if path.Tabs == 1 {
-			subPrinter(out, "│⎸  ", path)
-		} else if path.Tabs == 2 {
-			subPrinter(out, "│⎸  │⎸  ", path)
-		}
-	}
 }
 
 //return in output formated tree
@@ -112,10 +98,20 @@ func strToDir(path string) (dir, error) {
 	return a, nil
 }
 
-func subPrinter(out io.Writer, tabs string, path dir) {
-	fmt.Fprintf(out, "%v%v\n", tabGen(path), path.Name)
+//output formated string of dir in output
+func dirPrinter(out io.Writer, path dir) {
+	if path.IsDir == true {
+		fmt.Fprintf(out, "%v%v\n", tabGen(path), path.Name)
+	} else {
+		if path.Size == 0 {
+			fmt.Fprintf(out, "%v%v (empty)\n", tabGen(path), path.Name)
+		} else {
+			fmt.Fprintf(out, "%v%v (%vb)\n", tabGen(path), path.Name, path.Size)
+		}
+	}
 }
 
+// generate tabs
 func tabGen(file dir) string {
 	prevDirs := append(file.PrevDirsLast[1:], file.IsLast)
 	pipeAndTab := "│\t"
