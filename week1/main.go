@@ -36,18 +36,27 @@ func dirTree(out io.Writer, path string, printFiles bool) error {
 	if err != nil {
 		return err
 	}
-	//logic for -f
-	if printFiles == true {
-		dirRecursiveFinder(out, pathDir)
-	}
+	dirRecursiveFinder(out, pathDir, printFiles)
 	return nil
 }
 
 //return massive with collection of dirs
-func dirContent(path dir) ([]dir, error) {
-	files, err := ioutil.ReadDir(path.Path) // warning !!!
+func dirContent(path dir, flag bool) ([]dir, error) {
+	files, err := ioutil.ReadDir(path.Path)
 	if err != nil {
 		return nil, err
+	}
+	//logic for flag
+	if flag == false {
+		var reworked []os.FileInfo
+		for _, fil := range files {
+			if fil.IsDir() == true {
+				reworked = append(reworked, fil)
+			} else {
+				continue
+			}
+		}
+		files = reworked
 	}
 	var dirs []dir
 	for i, file := range files {
@@ -67,15 +76,15 @@ func dirContent(path dir) ([]dir, error) {
 }
 
 //return in output formated tree
-func dirRecursiveFinder(out io.Writer, current dir) error {
-	dirs, err := dirContent(current)
+func dirRecursiveFinder(out io.Writer, current dir, flag bool) error {
+	dirs, err := dirContent(current, flag)
 	if err != nil {
 		return err
 	}
 	for _, subDir := range dirs {
 		// fmt.Fprintf(out, "%v | %v\n", subDir.Name, subDir.PrevDirsLast)
 		dirPrinter(out, subDir)
-		dirRecursiveFinder(out, subDir)
+		dirRecursiveFinder(out, subDir, flag)
 	}
 	return nil
 }
