@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 )
 
 // сюда писать код
@@ -23,25 +24,31 @@ func main() {
 	in := make(chan interface{})
 	out := make(chan interface{})
 
-	go SingleHash(in, out)
-	in <- "data"
+	// go SingleHash(in, out)
+	// in <- "data"
+	// fmt.Println(<-out)
+
+	go MultiHash(in, out)
+	in <- "2918445923~1798600672"
 	fmt.Println(<-out)
 }
 
-// func MultiHash(in, out chan interface{}) {
-// 	for i := range in {
-// 		dataStr := fmt.Sprintf("%v", i)
-// 		ch := make(chan string, 6)
-// 		var hashTable [6]string
-// 		for i := 0; i < 6; i++ {
-// 			go func(i int, dataStr string) {
-// 				hashTable[i] = DataSignerCrc32(string(i) + dataStr)
-// 			}(i, dataStr)
-// 		}
-// 		result := ""
-// 		for i := range hashTable {
-// 			result += i
-// 		}
-// 		out <- result
-// 	}
-// }
+func MultiHash(in, out chan interface{}) {
+	dataStr := fmt.Sprintf("%v", <-in)
+	var hashTable [6]string
+	mu := &sync.Mutex{}
+	for i := 0; i < 6; i++ {
+		go func(i int, dataStr string) {
+			mu.Lock()
+			hashTable[i] = DataSignerCrc32(string(i) + dataStr)
+			mu.Unlock()
+		}(i, dataStr)
+	}
+	result := ""
+	for _, val := range hashTable {
+		mu.Lock()
+		result += val
+		mu.Unlock()
+	}
+	out <- result
+}
