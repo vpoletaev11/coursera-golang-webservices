@@ -36,15 +36,20 @@ func main() {
 func MultiHash(in, out chan interface{}) {
 	dataStr := fmt.Sprintf("%v", <-in)
 	var hashTable [6]string
+	wg := &sync.WaitGroup{}
 	mu := &sync.Mutex{}
 	for i := 0; i < 6; i++ {
-		go func(i int, dataStr string) {
+		wg.Add(1)
+		go func(i int, dataStr string, wg *sync.WaitGroup) {
+			defer wg.Done()
+			hash := DataSignerCrc32(string(i) + dataStr)
 			mu.Lock()
-			hashTable[i] = DataSignerCrc32(string(i) + dataStr)
+			hashTable[i] = hash
 			mu.Unlock()
-		}(i, dataStr)
+		}(i, dataStr, wg)
 	}
 	result := ""
+	wg.Wait()
 	for _, val := range hashTable {
 		mu.Lock()
 		result += val
