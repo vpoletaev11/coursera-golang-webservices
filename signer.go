@@ -18,17 +18,20 @@ func main() {
 
 // SingleHash test
 func SingleHash(in, out chan interface{}) {
-	dataStr := fmt.Sprintf("%s", <-in)
-	half1 := make(chan string)
-	half2 := make(chan string)
-	go func(dataStr string, ch chan string) {
-		half1 <- DataSignerCrc32(dataStr)
-	}(dataStr, half1)
-	go func(dataStr string, ch chan string) {
-		half2 <- DataSignerCrc32(DataSignerMd5(dataStr))
-	}(dataStr, half2)
-	result := <-half1 + "~" + <-half2
-	out <- result
+	for val := range in {
+		dataStr := fmt.Sprintf("%s", val)
+		half1 := make(chan string)
+		half2 := make(chan string)
+		go func(dataStr string) {
+			half1 <- DataSignerCrc32(dataStr)
+		}(dataStr)
+		go func(dataStr string) {
+			half2 <- DataSignerCrc32(DataSignerMd5(dataStr))
+		}(dataStr)
+		result := <-half1 + "~" + <-half2
+		out <- result
+	}
+	close(out)
 }
 
 // MultiHash test

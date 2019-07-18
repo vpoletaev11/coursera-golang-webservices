@@ -13,10 +13,8 @@ func TestSingleHash1(t *testing.T) {
 	go SingleHash(in, out)
 	in <- 1
 	if <-out != "1140956898~3176729503" {
-		err := fmt.Errorf("Func work incorrect")
-		fmt.Println(err.Error())
+		t.Error("Func work incorrect")
 	}
-	fmt.Println("TestSingleHash1 DONE")
 }
 
 //SingleHashTest2 check efficiency of func SingleHash with multiple values on input
@@ -25,11 +23,12 @@ func TestSingleHash2(t *testing.T) {
 	out := make(chan interface{})
 	inputData := []int{0, 1, 2}
 
-	SingleHash(in, out)
-	for _, fibNum := range inputData {
-		in <- fibNum
-	}
-
+	go SingleHash(in, out)
+	go func() {
+		for _, fibNum := range inputData {
+			in <- fibNum
+		}
+	}()
 	for outVal := range out {
 		fmt.Println(outVal)
 	}
