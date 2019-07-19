@@ -33,3 +33,13 @@ func TestSingleHash2(t *testing.T) {
 		fmt.Println(outVal)
 	}
 }
+
+
+func TestMultiHash1(t *testing.T) {
+	in := make(chan interface{})
+	out := make(chan interface{})
+
+	go MultiHash(in, out)
+	in <- "1140956898~3176729503"
+	fmt.Println(<-out)
+}

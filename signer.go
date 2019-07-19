@@ -11,12 +11,12 @@ func main() {
 	in := make(chan interface{})
 	out := make(chan interface{})
 
-	go SingleHash(in, out)
-	in <- 1
+	go MultiHash(in, out)
+	in <- "1140956898~3176729503"
 	fmt.Println(<-out)
 }
 
-// SingleHash test
+// SingleHash calculate value crc32(data)+"~"+crc32(md5(data)), data is what came to the input.
 func SingleHash(in, out chan interface{}) {
 	for val := range in {
 		dataStr := fmt.Sprintf("%s", val)
@@ -34,7 +34,8 @@ func SingleHash(in, out chan interface{}) {
 	close(out)
 }
 
-// MultiHash test
+// MultiHash calculate value crc32(th+data)), where th=0..5 (i.e 6 hashes for every input value).
+// After concatenate hashes in the order of calculation (0..5)
 func MultiHash(in, out chan interface{}) {
 	dataStr := fmt.Sprintf("%v", <-in)
 	var hashTable [6]string
@@ -58,7 +59,7 @@ func MultiHash(in, out chan interface{}) {
 	out <- result
 }
 
-// CombineResults test
+// CombineResults sort all results, concatenate them by "_".
 func CombineResults(in, out chan interface{}) {
 	hashes := make([]string, 0)
 	for val := range in {
@@ -69,6 +70,6 @@ func CombineResults(in, out chan interface{}) {
 	out <- result
 }
 
+// ExecutePipeline provides pipelining workers
 func ExecutePipeline(...job) {
-
 }
