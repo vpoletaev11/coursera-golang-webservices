@@ -18,6 +18,7 @@ func main() {
 
 // SingleHash calculate value crc32(data)+"~"+crc32(md5(data)), data is what came to the input.
 func SingleHash(in, out chan interface{}) {
+
 	for val := range in {
 		dataStr := fmt.Sprintf("%s", val)
 		half1 := make(chan string)
@@ -66,7 +67,7 @@ func CombineResults(in, out chan interface{}) {
 		hashes = append(hashes, fmt.Sprintf("%s", val))
 	}
 	sort.Strings(hashes)
-	result := strings.Join(hashes, "_")
+	result := strings.Join(hashes, "")
 	out <- result
 }
 

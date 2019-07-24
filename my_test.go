@@ -28,12 +28,18 @@ func TestSingleHash2(t *testing.T) {
 		for _, fibNum := range inputData {
 			in <- fibNum
 		}
+		close(in)
 	}()
+	received := ""
+	expected := "1562029987~36665590381140956898~31767295031865207073~94904396"
 	for outVal := range out {
-		fmt.Println(outVal)
+		strOutVal := fmt.Sprintf("%s", outVal)
+		received += strOutVal
+	}
+	if received != expected {
+		t.Error("Func work incorrect")
 	}
 }
-
 
 func TestMultiHash1(t *testing.T) {
 	in := make(chan interface{})
@@ -41,5 +47,7 @@ func TestMultiHash1(t *testing.T) {
 
 	go MultiHash(in, out)
 	in <- "1140956898~3176729503"
-	fmt.Println(<-out)
+	if <-out != "300712648027528722082641220176231982452840200132644172606480" {
+		t.Error("Func work incorrect")
+	}
 }
