@@ -18,20 +18,27 @@ func main() {
 
 // SingleHash calculate value crc32(data)+"~"+crc32(md5(data)), data is what came to the input.
 func SingleHash(in, out chan interface{}) {
-
+	wg := &sync.WaitGroup{}
 	for val := range in {
 		dataStr := fmt.Sprintf("%s", val)
-		half1 := make(chan string)
-		half2 := make(chan string)
-		go func(dataStr string) {
-			half1 <- DataSignerCrc32(dataStr)
-		}(dataStr)
-		go func(dataStr string) {
-			half2 <- DataSignerCrc32(DataSignerMd5(dataStr))
-		}(dataStr)
-		result := <-half1 + "~" + <-half2
-		out <- result
+		md5 := DataSignerMd5(dataStr)
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
+			half1 := make(chan string)
+			half2 := make(chan string)
+			go func(dataStr string) {
+				half1 <- DataSignerCrc32(dataStr)
+			}(dataStr)
+			go func(dataStr string) {
+				half2 <- DataSignerCrc32(md5)
+			}(dataStr)
+			result := <-half1 + "~" + <-half2
+			out <- result
+		}(wg)
+
 	}
+	wg.Wait()
 	close(out)
 }
 
