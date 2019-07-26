@@ -47,26 +47,35 @@ func SingleHash(in, out chan interface{}) {
 // MultiHash calculate value crc32(th+data)), where th=0..5 (i.e 6 hashes for every input value).
 // After concatenate hashes in the order of calculation (0..5)
 func MultiHash(in, out chan interface{}) {
-	dataStr := fmt.Sprintf("%v", <-in)
-	var hashTable [6]string
-	wg := &sync.WaitGroup{}
-	mu := &sync.Mutex{}
-	for i := 0; i < 6; i++ {
-		wg.Add(1)
-		go func(i int, dataStr string, wg *sync.WaitGroup) {
-			defer wg.Done()
-			hash := DataSignerCrc32(string(i) + dataStr)
-			mu.Lock()
-			hashTable[i] = hash
-			mu.Unlock()
-		}(i, dataStr, wg)
+	wgroup := &sync.WaitGroup{}
+	for val := range in {
+		dataStr := fmt.Sprintf("%s", val)
+		wgroup.Add(1)
+		go func(wgroup *sync.WaitGroup) {
+			defer wgroup.Done()
+			var hashTable [6]string
+			wg := &sync.WaitGroup{}
+			mu := &sync.Mutex{}
+			for i := 0; i < 6; i++ {
+				wg.Add(1)
+				go func(i int, dataStr string, wg *sync.WaitGroup) {
+					defer wg.Done()
+					hash := DataSignerCrc32(string(i) + dataStr)
+					mu.Lock()
+					hashTable[i] = hash
+					mu.Unlock()
+				}(i, dataStr, wg)
+			}
+			result := ""
+			wg.Wait()
+			for _, val := range hashTable {
+				result += val
+			}
+			out <- result
+		}(wgroup)
 	}
-	result := ""
-	wg.Wait()
-	for _, val := range hashTable {
-		result += val
-	}
-	out <- result
+	wgroup.Wait()
+	close(out)
 }
 
 // CombineResults sort all results, concatenate them by "_".
