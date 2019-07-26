@@ -23,13 +23,12 @@ func TestSingleHash2(t *testing.T) {
 	out := make(chan interface{})
 	inputData := []int{0, 1, 2}
 
-	go SingleHash(in, out)
 	go func() {
 		for _, fibNum := range inputData {
 			in <- fibNum
 		}
-		close(in) // remove this
 	}()
+	go SingleHash(in, out)
 	received := ""
 	expected := "1562029987~36665590381140956898~31767295031865207073~94904396"
 	for outVal := range out {

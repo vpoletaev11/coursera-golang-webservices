@@ -5,41 +5,43 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 )
 
 func main() {
-	in := make(chan interface{})
-	out := make(chan interface{})
-
-	go MultiHash(in, out)
-	in <- "1140956898~3176729503"
-	fmt.Println(<-out)
 }
 
 // SingleHash calculate value crc32(data)+"~"+crc32(md5(data)), data is what came to the input.
 func SingleHash(in, out chan interface{}) {
 	wg := &sync.WaitGroup{}
-	for val := range in {
-		dataStr := fmt.Sprintf("%s", val)
-		md5 := DataSignerMd5(dataStr)
-		wg.Add(1)
-		go func(wg *sync.WaitGroup) {
-			defer wg.Done()
-			half1 := make(chan string)
-			half2 := make(chan string)
-			go func(dataStr string) {
-				half1 <- DataSignerCrc32(dataStr)
-			}(dataStr)
-			go func(dataStr string) {
-				half2 <- DataSignerCrc32(md5)
-			}(dataStr)
-			result := <-half1 + "~" + <-half2
-			out <- result
-		}(wg)
+	for {
+		timeout := time.After(1 * time.Millisecond)
+		select {
+		case input := <-in:
+			dataStr := fmt.Sprintf("%s", input)
+			md5 := DataSignerMd5(dataStr)
+			wg.Add(1)
+			go func(wg *sync.WaitGroup) {
+				defer wg.Done()
+				half1 := make(chan string)
+				half2 := make(chan string)
+				go func(dataStr string) {
+					half1 <- DataSignerCrc32(dataStr)
+				}(dataStr)
+				go func(dataStr string) {
+					half2 <- DataSignerCrc32(md5)
+				}(dataStr)
+				result := <-half1 + "~" + <-half2
+				out <- result
+			}(wg)
+		case <-timeout:
+			wg.Wait()
+			close(out)
+			return
+		}
 
 	}
-	wg.Wait()
-	close(out)
+
 }
 
 // MultiHash calculate value crc32(th+data)), where th=0..5 (i.e 6 hashes for every input value).
