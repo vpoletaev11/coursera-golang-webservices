@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 	"testing"
 )
 
-// SingleHashTest1 check efficiency of func SingleHash with one value on input
+// TestSingleHash1 check efficiency of func SingleHash with one value on input
 func TestSingleHash1(t *testing.T) {
 	in := make(chan interface{})
 	out := make(chan interface{})
@@ -17,7 +19,7 @@ func TestSingleHash1(t *testing.T) {
 	}
 }
 
-//SingleHashTest2 check efficiency of func SingleHash with multiple values on input
+//TestSingleHash2 check efficiency of func SingleHash with multiple values on input
 func TestSingleHash2(t *testing.T) {
 	in := make(chan interface{})
 	out := make(chan interface{})
@@ -40,6 +42,7 @@ func TestSingleHash2(t *testing.T) {
 	}
 }
 
+// TestMultiHash1 check efficiency of func MultiHash with one value on input
 func TestMultiHash1(t *testing.T) {
 	in := make(chan interface{})
 	out := make(chan interface{})
@@ -51,19 +54,27 @@ func TestMultiHash1(t *testing.T) {
 	}
 }
 
+//TestMultiHash2 check efficiency of func MultiHash with multiple values on input
 func TestMultiHash2(t *testing.T) {
 	in := make(chan interface{})
 	out := make(chan interface{})
 	inputValues := [3]string{"1562029987~3666559038", "1140956898~3176729503", "1865207073~94904396"}
 
-	go MultiHash(in, out)
 	go func() {
 		for _, val := range inputValues {
 			in <- val
 		}
 		close(in)
 	}()
+	go MultiHash(in, out)
+	outVals := make([]string, 0)
 	for outVal := range out {
-		fmt.Println(outVal)
+		outVals = append(outVals, fmt.Sprintf("%s", outVal))
+	}
+	sort.Strings(outVals)
+	received := strings.Join(outVals, "")
+	expected := "15310779131042636383244187637341090521153638267521892201734260766864023533796803040678944271931414433520554563504613984300712648027528722082641220176231982452840200132644172606480"
+	if received != expected {
+		t.Error("Func work incorrect")
 	}
 }
