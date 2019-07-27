@@ -19,7 +19,7 @@ func TestSingleHash1(t *testing.T) {
 	}
 }
 
-//TestSingleHash2 check efficiency of func SingleHash with multiple values on input
+// TestSingleHash2 check efficiency of func SingleHash with multiple values on input
 func TestSingleHash2(t *testing.T) {
 	in := make(chan interface{})
 	out := make(chan interface{})
@@ -54,7 +54,7 @@ func TestMultiHash1(t *testing.T) {
 	}
 }
 
-//TestMultiHash2 check efficiency of func MultiHash with multiple values on input
+// TestMultiHash2 check efficiency of func MultiHash with multiple values on input
 func TestMultiHash2(t *testing.T) {
 	in := make(chan interface{})
 	out := make(chan interface{})
@@ -70,11 +70,34 @@ func TestMultiHash2(t *testing.T) {
 	outVals := make([]string, 0)
 	for outVal := range out {
 		outVals = append(outVals, fmt.Sprintf("%s", outVal))
+		fmt.Println(outVal)
 	}
 	sort.Strings(outVals)
 	received := strings.Join(outVals, "")
 	expected := "15310779131042636383244187637341090521153638267521892201734260766864023533796803040678944271931414433520554563504613984300712648027528722082641220176231982452840200132644172606480"
 	if received != expected {
+		t.Error("Func work incorrect")
+	}
+}
+
+// TestCombineResults check efficiency of func CombineResults
+func TestCombineResults(t *testing.T) {
+	in := make(chan interface{})
+	out := make(chan interface{})
+	inputData := []string{
+		"300712648027528722082641220176231982452840200132644172606480",
+		"260766864023533796803040678944271931414433520554563504613984",
+		"15310779131042636383244187637341090521153638267521892201734"}
+
+	go func() {
+		for _, val := range inputData {
+			in <- val
+		}
+		close(in)
+	}()
+	go CombineResults(in, out)
+	expected := "15310779131042636383244187637341090521153638267521892201734_260766864023533796803040678944271931414433520554563504613984_300712648027528722082641220176231982452840200132644172606480"
+	if fmt.Sprintf("%s", <-out) != expected {
 		t.Error("Func work incorrect")
 	}
 }

@@ -85,7 +85,7 @@ func CombineResults(in, out chan interface{}) {
 		hashes = append(hashes, fmt.Sprintf("%s", val))
 	}
 	sort.Strings(hashes)
-	result := strings.Join(hashes, "")
+	result := strings.Join(hashes, "_")
 	out <- result
 }
 
