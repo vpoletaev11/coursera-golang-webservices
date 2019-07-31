@@ -29,8 +29,12 @@ func TestSingleHash2(t *testing.T) {
 		for _, fibNum := range inputData {
 			in <- fibNum
 		}
+		close(in)
 	}()
-	go SingleHash(in, out)
+	go func() {
+		SingleHash(in, out)
+		close(out)
+	}()
 	received := ""
 	expected := "1562029987~36665590381140956898~31767295031865207073~94904396"
 	for outVal := range out {
@@ -66,7 +70,10 @@ func TestMultiHash2(t *testing.T) {
 		}
 		close(in)
 	}()
-	go MultiHash(in, out)
+	go func() {
+		MultiHash(in, out)
+		close(out)
+	}()
 	outVals := make([]string, 0)
 	for outVal := range out {
 		outVals = append(outVals, fmt.Sprintf("%s", outVal))

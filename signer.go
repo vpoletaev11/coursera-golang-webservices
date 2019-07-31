@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 )
 
 func main() {
@@ -14,34 +13,25 @@ func main() {
 // SingleHash calculate value crc32(data)+"~"+crc32(md5(data)), data is what came to the input.
 func SingleHash(in, out chan interface{}) {
 	wg := &sync.WaitGroup{}
-	for {
-		timeout := time.After(1 * time.Millisecond)
-		select {
-		case input := <-in:
-			dataStr := fmt.Sprintf("%s", input)
-			md5 := DataSignerMd5(dataStr)
-			wg.Add(1)
-			go func(wg *sync.WaitGroup) {
-				defer wg.Done()
-				half1 := make(chan string)
-				half2 := make(chan string)
-				go func(dataStr string) {
-					half1 <- DataSignerCrc32(dataStr)
-				}(dataStr)
-				go func(dataStr string) {
-					half2 <- DataSignerCrc32(md5)
-				}(dataStr)
-				result := <-half1 + "~" + <-half2
-				out <- result
-			}(wg)
-		case <-timeout:
-			wg.Wait()
-			close(out)
-			return
-		}
-
+	for val := range in {
+		dataStr := fmt.Sprintf("%s", val)
+		md5 := DataSignerMd5(dataStr)
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
+			half1 := make(chan string)
+			half2 := make(chan string)
+			go func(dataStr string) {
+				half1 <- DataSignerCrc32(dataStr)
+			}(dataStr)
+			go func(dataStr string) {
+				half2 <- DataSignerCrc32(md5)
+			}(dataStr)
+			result := <-half1 + "~" + <-half2
+			out <- result
+		}(wg)
 	}
-
+	wg.Wait()
 }
 
 // MultiHash calculate value crc32(th+data)), where th=0..5 (i.e 6 hashes for every input value).
@@ -75,7 +65,6 @@ func MultiHash(in, out chan interface{}) {
 		}(wgroup)
 	}
 	wgroup.Wait()
-	close(out)
 }
 
 // CombineResults sort all results, concatenate them by "_".
@@ -90,5 +79,20 @@ func CombineResults(in, out chan interface{}) {
 }
 
 // ExecutePipeline provides pipelining workers
-func ExecutePipeline(...job) {
+func ExecutePipeline(jobs ...job) {
+	in := make(chan interface{})
+	out := make(chan interface{})
+	wg := &sync.WaitGroup{}
+	for _, funcJob := range jobs {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
+			funcJob(in, out)
+
+			close(out)
+		}(wg)
+		in = out
+		out = make(chan interface{})
+	}
+	wg.Wait()
 }
