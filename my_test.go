@@ -108,3 +108,18 @@ func TestCombineResults(t *testing.T) {
 		t.Error("Func work incorrect")
 	}
 }
+
+func TestExecutePipeline(t *testing.T) {
+	jobs := []job{
+		job(func(in, out chan interface{}) {
+			fmt.Println("lol1")
+			out <- "testData"
+		}),
+		job(func(in, out chan interface{}) {
+			buffer := <-in
+			fmt.Println("lol2")
+			fmt.Println(buffer)
+		}),
+	}
+	ExecutePipeline(jobs...)
+}
