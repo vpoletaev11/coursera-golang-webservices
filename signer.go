@@ -15,7 +15,7 @@ func main() {
 func SingleHash(in, out chan interface{}) {
 	wg := &sync.WaitGroup{}
 	for val := range in {
-		dataStr := fmt.Sprintf("%s", val)
+		dataStr := fmt.Sprintf("%v", val)
 		md5 := DataSignerMd5(dataStr)
 		wg.Add(1)
 		go func(wg *sync.WaitGroup) {
@@ -40,7 +40,7 @@ func SingleHash(in, out chan interface{}) {
 func MultiHash(in, out chan interface{}) {
 	wgroup := &sync.WaitGroup{}
 	for val := range in {
-		dataStr := fmt.Sprintf("%s", val)
+		dataStr := fmt.Sprintf("%v", val)
 		wgroup.Add(1)
 		go func(wgroup *sync.WaitGroup) {
 			defer wgroup.Done()
@@ -51,7 +51,7 @@ func MultiHash(in, out chan interface{}) {
 				wg.Add(1)
 				go func(i int, dataStr string, wg *sync.WaitGroup) {
 					defer wg.Done()
-					hash := DataSignerCrc32(string(i) + dataStr)
+					hash := DataSignerCrc32(fmt.Sprintf("%v", i) + dataStr)
 					mu.Lock()
 					hashTable[i] = hash
 					mu.Unlock()
@@ -72,7 +72,7 @@ func MultiHash(in, out chan interface{}) {
 func CombineResults(in, out chan interface{}) {
 	hashes := make([]string, 0)
 	for val := range in {
-		hashes = append(hashes, fmt.Sprintf("%s", val))
+		hashes = append(hashes, fmt.Sprintf("%v", val))
 	}
 	sort.Strings(hashes)
 	result := strings.Join(hashes, "_")
@@ -83,14 +83,17 @@ func CombineResults(in, out chan interface{}) {
 func ExecutePipeline(jobs ...job) {
 	in := make(chan interface{})
 	out := make(chan interface{})
-	go func() {
-		jobs[0](in, out)
-		close(out)
-	}()
-	out = make(chan interface{})
-	in = out
-	go func() {
-		jobs[1](in, out)
-	}()
-	time.Sleep(300 * time.Millisecond)
+	wg := sync.WaitGroup{}
+	for _, job := range jobs {
+		wg.Add(1)
+		go func(in, out chan interface{}) {
+			defer wg.Done()
+			job(in, out)
+			close(out)
+		}(in, out)
+		time.Sleep(1 * time.Millisecond)
+		in = out
+		out = make(chan interface{})
+	}
+	wg.Wait()
 }

@@ -13,8 +13,8 @@ func TestSingleHash1(t *testing.T) {
 	out := make(chan interface{})
 
 	go SingleHash(in, out)
-	in <- 1
-	if <-out != "1140956898~3176729503" {
+	in <- 0
+	if <-out != "4108050209~502633748" {
 		t.Error("Func work incorrect")
 	}
 }
@@ -36,7 +36,7 @@ func TestSingleHash2(t *testing.T) {
 		close(out)
 	}()
 	received := ""
-	expected := "1562029987~36665590381140956898~31767295031865207073~94904396"
+	expected := "4108050209~5026337482212294583~709660146450215437~1933333237"
 	for outVal := range out {
 		strOutVal := fmt.Sprintf("%s", outVal)
 		received += strOutVal
@@ -52,8 +52,8 @@ func TestMultiHash1(t *testing.T) {
 	out := make(chan interface{})
 
 	go MultiHash(in, out)
-	in <- "1140956898~3176729503"
-	if <-out != "300712648027528722082641220176231982452840200132644172606480" {
+	in <- "4108050209~502633748"
+	if <-out != "29568666068035183841425683795340791879727309630931025356555" {
 		t.Error("Func work incorrect")
 	}
 }
@@ -62,7 +62,7 @@ func TestMultiHash1(t *testing.T) {
 func TestMultiHash2(t *testing.T) {
 	in := make(chan interface{})
 	out := make(chan interface{})
-	inputValues := [3]string{"1562029987~3666559038", "1140956898~3176729503", "1865207073~94904396"}
+	inputValues := [3]string{"4108050209~502633748", "2212294583~709660146", "1450215437~1933333237"}
 
 	go func() {
 		for _, val := range inputValues {
@@ -77,11 +77,10 @@ func TestMultiHash2(t *testing.T) {
 	outVals := make([]string, 0)
 	for outVal := range out {
 		outVals = append(outVals, fmt.Sprintf("%s", outVal))
-		fmt.Println(outVal)
 	}
 	sort.Strings(outVals)
 	received := strings.Join(outVals, "")
-	expected := "15310779131042636383244187637341090521153638267521892201734260766864023533796803040678944271931414433520554563504613984300712648027528722082641220176231982452840200132644172606480"
+	expected := "295686660680351838414256837953407918797273096309310253565554124676206380750763036832117583433119022284321470231929404624958044192186797981418233587017209679042592862002427381542"
 	if received != expected {
 		t.Error("Func work incorrect")
 	}
@@ -92,9 +91,9 @@ func TestCombineResults(t *testing.T) {
 	in := make(chan interface{})
 	out := make(chan interface{})
 	inputData := []string{
-		"300712648027528722082641220176231982452840200132644172606480",
-		"260766864023533796803040678944271931414433520554563504613984",
-		"15310779131042636383244187637341090521153638267521892201734"}
+		"4958044192186797981418233587017209679042592862002427381542",
+		"412467620638075076303683211758343311902228432147023192940462",
+		"29568666068035183841425683795340791879727309630931025356555"}
 
 	go func() {
 		for _, val := range inputData {
@@ -103,23 +102,8 @@ func TestCombineResults(t *testing.T) {
 		close(in)
 	}()
 	go CombineResults(in, out)
-	expected := "15310779131042636383244187637341090521153638267521892201734_260766864023533796803040678944271931414433520554563504613984_300712648027528722082641220176231982452840200132644172606480"
+	expected := "29568666068035183841425683795340791879727309630931025356555_412467620638075076303683211758343311902228432147023192940462_4958044192186797981418233587017209679042592862002427381542"
 	if fmt.Sprintf("%s", <-out) != expected {
 		t.Error("Func work incorrect")
 	}
-}
-
-func TestExecutePipeline(t *testing.T) {
-	jobs := []job{
-		job(func(in, out chan interface{}) {
-			fmt.Println("lol1")
-			out <- "testData"
-		}),
-		job(func(in, out chan interface{}) {
-			buffer := <-in
-			fmt.Println("lol2")
-			fmt.Println(buffer)
-		}),
-	}
-	ExecutePipeline(jobs...)
 }
