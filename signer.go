@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 )
 
 func main() {
@@ -84,14 +83,13 @@ func ExecutePipeline(jobs ...job) {
 	in := make(chan interface{})
 	out := make(chan interface{})
 	wg := sync.WaitGroup{}
-	for _, job := range jobs {
+	for _, j := range jobs {
 		wg.Add(1)
-		go func(in, out chan interface{}) {
+		go func(in, out chan interface{}, j job, wg *sync.WaitGroup) {
 			defer wg.Done()
-			job(in, out)
+			j(in, out)
 			close(out)
-		}(in, out)
-		time.Sleep(1 * time.Millisecond)
+		}(in, out, j, &wg)
 		in = out
 		out = make(chan interface{})
 	}
