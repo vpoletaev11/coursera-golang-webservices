@@ -17,19 +17,19 @@ func SingleHash(in, out chan interface{}) {
 		dataStr := fmt.Sprintf("%v", val)
 		md5 := DataSignerMd5(dataStr)
 		wg.Add(1)
-		go func(wg *sync.WaitGroup) {
+		go func(out chan interface{}, wg *sync.WaitGroup) {
 			defer wg.Done()
 			half1 := make(chan string)
 			half2 := make(chan string)
-			go func(dataStr string) {
+			go func(dataStr string, half1 chan string) {
 				half1 <- DataSignerCrc32(dataStr)
-			}(dataStr)
-			go func(dataStr string) {
+			}(dataStr, half1)
+			go func(dataStr string, half2 chan string) {
 				half2 <- DataSignerCrc32(md5)
-			}(dataStr)
+			}(dataStr, half2)
 			result := <-half1 + "~" + <-half2
 			out <- result
-		}(wg)
+		}(out, wg)
 	}
 	wg.Wait()
 }
@@ -41,7 +41,7 @@ func MultiHash(in, out chan interface{}) {
 	for val := range in {
 		dataStr := fmt.Sprintf("%v", val)
 		wgroup.Add(1)
-		go func(wgroup *sync.WaitGroup) {
+		go func(out chan interface{}, wgroup *sync.WaitGroup) {
 			defer wgroup.Done()
 			var hashTable [6]string
 			wg := &sync.WaitGroup{}
@@ -62,7 +62,7 @@ func MultiHash(in, out chan interface{}) {
 				result += val
 			}
 			out <- result
-		}(wgroup)
+		}(out, wgroup)
 	}
 	wgroup.Wait()
 }
